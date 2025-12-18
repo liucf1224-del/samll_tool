@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont, QTextCursor, QColor, QTextCharFormat
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
-# 配置日志
+# 配置日志-test
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
