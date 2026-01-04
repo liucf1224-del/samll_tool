@@ -40,12 +40,11 @@ class ParticleSystem(QObject):
         """初始化粒子系统"""
         self.particles = []
         for i in range(particle_count):
-            # 根据粒子索引调整初始位置，让粒子从Labubu图片上方飘落
-            # 新图片人物靠中下，所以粒子初始位置集中在顶部区域
-            if i < 90:  # 前90个粒子在图片顶部区域
-                y = random.uniform(15, 50)  # 调整为更靠上的位置
-            else:  # 后30个粒子在图片中上部区域
-                y = random.uniform(50, 100)
+            # 根据粒子索引调整初始位置，让粒子从圣诞老人上方飘落
+            if i < 90:  # 前90个粒子在圣诞老人的顶部区域
+                y = random.uniform(15, 30)  # 调整为更靠近顶部的位置
+            else:  # 后30个粒子在圣诞老人的中间区域
+                y = random.uniform(30, 150)
             
             particle = {
                 'x': random.uniform(50, 200),
@@ -105,10 +104,10 @@ class ParticleSystem(QObject):
             if particle['age'] >= particle['lifetime']:
                 particle['x'] = random.uniform(50, 200)
                 # 随机决定重置到顶部还是中间，保持顶部多、中间少的比例
-                if random.random() < 0.7:  # 70%的概率重置到顶部区域
-                    particle['y'] = random.uniform(15, 50)
-                else:  # 30%的概率重置到中上部区域
-                    particle['y'] = random.uniform(50, 100)
+                if random.random() < 0.7:  # 70%的概率重置到顶部（更靠近树尖）
+                    particle['y'] = random.uniform(0, 30)
+                else:  # 30%的概率重置到中间
+                    particle['y'] = random.uniform(30, 150)
                 particle['vx'] = random.uniform(-0.3, 0.3)  # 减小横向速度范围
                 particle['vy'] = random.uniform(0.2, 0.8)  # 减小纵向速度范围
                 particle['age'] = 0
@@ -122,10 +121,10 @@ class ParticleSystem(QObject):
             if particle['y'] > 400 or particle['x'] < -50 or particle['x'] > 300:
                 particle['x'] = random.uniform(50, 200)
                 # 随机决定重置到顶部还是中间，保持顶部多、中间少的比例
-                if random.random() < 0.7:  # 70%的概率重置到顶部区域
-                    particle['y'] = random.uniform(15, 50)
-                else:  # 30%的概率重置到中上部区域
-                    particle['y'] = random.uniform(50, 100)
+                if random.random() < 0.7:  # 70%的概率重置到顶部（更靠近树尖）
+                    particle['y'] = random.uniform(0, 30)
+                else:  # 30%的概率重置到中间
+                    particle['y'] = random.uniform(30, 150)
                 particle['vx'] = random.uniform(-0.3, 0.3)  # 减小横向速度范围
                 particle['vy'] = random.uniform(0.2, 0.8)  # 减小纵向速度范围
                 particle['rotation'] = random.uniform(0, 360)
@@ -185,16 +184,11 @@ class TransparentWidget(QWidget):
 
 
 class ChristmasTreeWidget(TransparentWidget):
-    """Labubu桌面插件主窗口（PyQt5兼容版）"""
+    """圣诞树主窗口（PyQt5兼容版）"""
     
     def __init__(self):
         super().__init__()
         self.setFixedSize(300, 400)
-        
-        # 图片管理相关属性
-        self.character_images = []  # 存储所有角色图片
-        self.current_image_index = 0  # 当前选中图片索引
-        self.character_files = []  # 存储图片文件名
         
         # 加载图片资源
         self.load_resources()
@@ -203,9 +197,8 @@ class ChristmasTreeWidget(TransparentWidget):
         self.stars_enabled = True
         self.current_garland_frame = 0
         self.garland_frame_count = 4
-        self.is_mirrored = False  # 左右镜像状态
         
-        # Labubu上下移动动画参数
+        # 圣诞老人上下移动动画参数
         self.man_y_offset = 0
         self.man_move_direction = 1  # 1 向下，-1 向上
         self.man_move_speed = 0.5
@@ -258,16 +251,16 @@ class ChristmasTreeWidget(TransparentWidget):
                 self.tray_icon = QSystemTrayIcon(self)
                 self.tray_icon.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxInformation))
             
-            self.tray_icon.setToolTip("Labubu桌面插件")
+            self.tray_icon.setToolTip("圣诞老人桌面插件")
             
             # 创建托盘菜单
             tray_menu = QMenu()
             
-            show_action = QAction("显示Labubu", self)
+            show_action = QAction("显示圣诞老人", self)
             show_action.triggered.connect(self.show)
             tray_menu.addAction(show_action)
             
-            hide_action = QAction("隐藏Labubu", self)
+            hide_action = QAction("隐藏圣诞老人", self)
             hide_action.triggered.connect(self.hide)
             tray_menu.addAction(hide_action)
             
@@ -327,22 +320,7 @@ class ChristmasTreeWidget(TransparentWidget):
                 # 恢复特效开关状态
                 if 'stars_enabled' in config:
                     self.stars_enabled = config['stars_enabled']
-                
-                # 恢复左右镜像状态
-                if 'is_mirrored' in config:
-                    self.is_mirrored = config['is_mirrored']
-                
-                # 恢复当前图片索引
-                if 'current_image_index' in config:
-                    self.current_image_index = config['current_image_index']
-                    # 确保索引有效
-                    if self.current_image_index >= len(self.character_images):
-                        self.current_image_index = 0
-                    # 更新当前显示的图片
-                    if self.character_images:
-                        self.tree_pixmap = self.character_images[self.current_image_index]
-                        self.original_pixmap = self.tree_pixmap.copy()
-                        
+                    
             except Exception as e:
                 print(f"加载配置失败: {e}")
         
@@ -353,9 +331,7 @@ class ChristmasTreeWidget(TransparentWidget):
             config = {
                 'global_alpha': self.global_alpha,
                 'topmost': bool(self.windowFlags() & Qt.WindowStaysOnTopHint),
-                'stars_enabled': self.stars_enabled,
-                'is_mirrored': self.is_mirrored,
-                'current_image_index': self.current_image_index
+                'stars_enabled': self.stars_enabled
             }
             
             with open(config_path, 'w', encoding='utf-8') as f:
@@ -374,40 +350,15 @@ class ChristmasTreeWidget(TransparentWidget):
             if not os.path.exists(res_dir):
                 os.makedirs(res_dir)
 
-            # 加载Labubu图片 - 支持多个图片
-            self.character_images.clear()
-            self.character_files.clear()
-            
-            # 尝试加载labubu00-17.png图片
-            for i in range(18):
-                filename = f"labubu{i:02d}.png"
-                man_path = os.path.join(res_dir, filename)
-                if os.path.exists(man_path):
-                    original_pixmap = QPixmap(man_path)
-                    # 缩放Labubu图片到合适的大小，保持宽高比
-                    scaled_pixmap = original_pixmap.scaled(200, 310, Qt.KeepAspectRatio, 
+            # 加载圣诞老人图片
+            man_path = os.path.join(res_dir, "man2.png")
+            if os.path.exists(man_path):
+                self.tree_pixmap = QPixmap(man_path)
+                # 缩放圣诞老人图片到合适的大小，保持宽高比
+                self.tree_pixmap = self.tree_pixmap.scaled(200, 310, Qt.KeepAspectRatio, 
                                                           Qt.SmoothTransformation)
-                    self.character_images.append(scaled_pixmap)
-                    self.character_files.append(filename)
-            
-            # 如果没有找到labubu00-17.png，尝试加载默认图片p_labubu.png
-            if not self.character_images:
-                man_path = os.path.join(res_dir, "p_labubu.png")
-                if os.path.exists(man_path):
-                    original_pixmap = QPixmap(man_path)
-                    scaled_pixmap = original_pixmap.scaled(200, 310, Qt.KeepAspectRatio, 
-                                                          Qt.SmoothTransformation)
-                    self.character_images.append(scaled_pixmap)
-                    self.character_files.append("p_labubu.png")
-                else:
-                    # 使用备用图片
-                    fallback_pixmap = self.create_fallback_tree()
-                    self.character_images.append(fallback_pixmap)
-                    self.character_files.append("fallback.png")
-            
-            # 设置当前显示的图片
-            self.tree_pixmap = self.character_images[self.current_image_index]
-            self.original_pixmap = self.tree_pixmap.copy()  # 保存原始图片副本
+            else:
+                self.tree_pixmap = self.create_fallback_tree()
             
             # 加载星星图片
             # "Star1.png"太暗淡了 "Star3.png",还行 直接放最亮的4个  "Star2.png",
@@ -489,7 +440,6 @@ class ChristmasTreeWidget(TransparentWidget):
     def create_fallback_resources(self):
         """创建所有备用资源"""
         self.tree_pixmap = self.create_fallback_tree()
-        self.original_pixmap = self.tree_pixmap.copy()  # 保存原始图片副本
         self.star_pixmaps = [self.create_fallback_star() for _ in range(6)]
         
     def init_star_positions(self):
@@ -511,7 +461,7 @@ class ChristmasTreeWidget(TransparentWidget):
         if self.stars_enabled:
             self.update_stars()
             
-        # 更新Labubu上下移动
+        # 更新圣诞老人上下移动
         self.man_y_offset += self.man_move_direction * self.man_move_speed
         
         # 边界检测和方向反转
@@ -551,28 +501,11 @@ class ChristmasTreeWidget(TransparentWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
-        # 绘制Labubu
+        # 绘制圣诞老人
         if hasattr(self, 'tree_pixmap'):
             tree_x = (300 - self.tree_pixmap.width()) // 2
             tree_y = int(self.man_min_y + self.man_y_offset)
-            
-            if self.is_mirrored:
-                # 保存当前变换矩阵
-                painter.save()
-                
-                # 水平翻转绘制
-                center_x = tree_x + self.tree_pixmap.width() // 2
-                painter.translate(center_x, tree_y)
-                painter.scale(-1, 1)
-                painter.translate(-center_x, -tree_y)
-                
-                painter.drawPixmap(tree_x, tree_y, self.tree_pixmap)
-                
-                # 恢复变换矩阵
-                painter.restore()
-            else:
-                # 正常绘制
-                painter.drawPixmap(tree_x, tree_y, self.tree_pixmap)
+            painter.drawPixmap(tree_x, tree_y, self.tree_pixmap)
             
         # 绘制星星
         if self.stars_enabled:
@@ -654,52 +587,6 @@ class ChristmasTreeWidget(TransparentWidget):
         stars_action.triggered.connect(self.toggle_stars)
         menu.addAction(stars_action)
         
-        # 左右镜像开关
-        mirror_action = QAction("左右镜像", self)
-        mirror_action.setCheckable(True)
-        mirror_action.setChecked(self.is_mirrored)
-        mirror_action.triggered.connect(self.toggle_mirror)
-        menu.addAction(mirror_action)
-        
-        menu.addSeparator()
-        
-        # 角色选择
-        if len(self.character_images) > 1:
-            character_menu = menu.addMenu("角色选择")
-            
-            # 分组显示，每10个一组
-            group_size = 10
-            total_groups = (len(self.character_files) + group_size - 1) // group_size
-            
-            if total_groups == 1:
-                # 只有一组，直接显示所有选项
-                for i, filename in enumerate(self.character_files):
-                    display_name = os.path.splitext(filename)[0]
-                    action = QAction(display_name, self)
-                    action.setCheckable(True)
-                    if i == self.current_image_index:
-                        action.setChecked(True)
-                    action.triggered.connect(lambda checked, idx=i: self.switch_character(idx))
-                    character_menu.addAction(action)
-            else:
-                # 分组显示
-                for group in range(total_groups):
-                    start_idx = group * group_size
-                    end_idx = min((group + 1) * group_size, len(self.character_files))
-                    
-                    # 为每个分组创建子菜单
-                    group_menu = character_menu.addMenu(f"角色 {start_idx:02d}-{end_idx-1:02d}")
-                    
-                    for i in range(start_idx, end_idx):
-                        filename = self.character_files[i]
-                        display_name = os.path.splitext(filename)[0]
-                        action = QAction(display_name, group_menu)
-                        action.setCheckable(True)
-                        if i == self.current_image_index:
-                            action.setChecked(True)
-                        action.triggered.connect(lambda checked, idx=i: self.switch_character(idx))
-                        group_menu.addAction(action)
-        
         menu.addSeparator()
         
         # 透明度设置
@@ -736,9 +623,9 @@ class ChristmasTreeWidget(TransparentWidget):
     def show_about(self):
         """显示关于对话框"""
         QMessageBox.about(self, "关于", 
-                         "星星人桌面插件\n\n"
+                         "圣诞老人桌面插件\n\n"
                          "作者：codeliu\n"
-                         "版本：1.3\n"
+                         "版本：1.0\n"
                          "更多：https://github.com/liucf1224-del?tab=repositories\n")
                          
     def toggle_stars(self):
@@ -753,26 +640,11 @@ class ChristmasTreeWidget(TransparentWidget):
             else:
                 self.particle_system.stop_particles()  # 停止粒子系统
         
-    def toggle_mirror(self):
-        """切换左右镜像效果"""
-        self.is_mirrored = not self.is_mirrored
-        self.save_config()
-        self.update()  # 触发重绘
-    
     def set_transparency(self, alpha):
         """设置透明度"""
         self.global_alpha = alpha
         self.setWindowOpacity(alpha / 255.0)
         self.save_config()
-    
-    def switch_character(self, index):
-        """切换角色图片"""
-        if 0 <= index < len(self.character_images):
-            self.current_image_index = index
-            self.tree_pixmap = self.character_images[self.current_image_index]
-            self.original_pixmap = self.tree_pixmap.copy()
-            self.save_config()
-            self.update()  # 触发重绘
         
     def toggle_topmost(self):
         """切换置顶显示"""
@@ -796,14 +668,18 @@ class ChristmasTreeWidget(TransparentWidget):
             self.particle_system.stop_particles()
         event.accept()
 
+
+
+
+
 def main():
     """主函数"""
     app = QApplication(sys.argv)
     
     # 设置应用程序属性
-    app.setApplicationName("Labubu桌面插件")
+    app.setApplicationName("圣诞老人桌面插件")
     app.setApplicationVersion("1.0")
-    app.setOrganizationName("codeliu")
+    app.setOrganizationName("MiniMax Agent")
     
     # 设置应用程序图标
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -811,7 +687,7 @@ def main():
     if os.path.exists(icon_path):
         app.setWindowIcon(QIcon(icon_path))
     
-    # 直接创建Labubu窗口，不使用主窗口
+    # 直接创建圣诞老人窗口，不使用主窗口
     tree_widget = ChristmasTreeWidget()
     tree_widget.show()
     

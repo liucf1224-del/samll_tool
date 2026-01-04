@@ -191,11 +191,6 @@ class ChristmasTreeWidget(TransparentWidget):
         super().__init__()
         self.setFixedSize(300, 400)
         
-        # 图片管理相关属性
-        self.character_images = []  # 存储所有角色图片
-        self.current_image_index = 0  # 当前选中图片索引
-        self.character_files = []  # 存储图片文件名
-        
         # 加载图片资源
         self.load_resources()
         
@@ -331,18 +326,7 @@ class ChristmasTreeWidget(TransparentWidget):
                 # 恢复左右镜像状态
                 if 'is_mirrored' in config:
                     self.is_mirrored = config['is_mirrored']
-                
-                # 恢复当前图片索引
-                if 'current_image_index' in config:
-                    self.current_image_index = config['current_image_index']
-                    # 确保索引有效
-                    if self.current_image_index >= len(self.character_images):
-                        self.current_image_index = 0
-                    # 更新当前显示的图片
-                    if self.character_images:
-                        self.tree_pixmap = self.character_images[self.current_image_index]
-                        self.original_pixmap = self.tree_pixmap.copy()
-                        
+                    
             except Exception as e:
                 print(f"加载配置失败: {e}")
         
@@ -354,8 +338,7 @@ class ChristmasTreeWidget(TransparentWidget):
                 'global_alpha': self.global_alpha,
                 'topmost': bool(self.windowFlags() & Qt.WindowStaysOnTopHint),
                 'stars_enabled': self.stars_enabled,
-                'is_mirrored': self.is_mirrored,
-                'current_image_index': self.current_image_index
+                'is_mirrored': self.is_mirrored
             }
             
             with open(config_path, 'w', encoding='utf-8') as f:
@@ -374,40 +357,17 @@ class ChristmasTreeWidget(TransparentWidget):
             if not os.path.exists(res_dir):
                 os.makedirs(res_dir)
 
-            # 加载Labubu图片 - 支持多个图片
-            self.character_images.clear()
-            self.character_files.clear()
-            
-            # 尝试加载labubu00-17.png图片
-            for i in range(18):
-                filename = f"labubu{i:02d}.png"
-                man_path = os.path.join(res_dir, filename)
-                if os.path.exists(man_path):
-                    original_pixmap = QPixmap(man_path)
-                    # 缩放Labubu图片到合适的大小，保持宽高比
-                    scaled_pixmap = original_pixmap.scaled(200, 310, Qt.KeepAspectRatio, 
+            # 加载Labubu图片
+            man_path = os.path.join(res_dir, "p_labubu.png")
+            if os.path.exists(man_path):
+                original_pixmap = QPixmap(man_path)
+                # 缩放Labubu图片到合适的大小，保持宽高比
+                self.tree_pixmap = original_pixmap.scaled(200, 310, Qt.KeepAspectRatio, 
                                                           Qt.SmoothTransformation)
-                    self.character_images.append(scaled_pixmap)
-                    self.character_files.append(filename)
-            
-            # 如果没有找到labubu00-17.png，尝试加载默认图片p_labubu.png
-            if not self.character_images:
-                man_path = os.path.join(res_dir, "p_labubu.png")
-                if os.path.exists(man_path):
-                    original_pixmap = QPixmap(man_path)
-                    scaled_pixmap = original_pixmap.scaled(200, 310, Qt.KeepAspectRatio, 
-                                                          Qt.SmoothTransformation)
-                    self.character_images.append(scaled_pixmap)
-                    self.character_files.append("p_labubu.png")
-                else:
-                    # 使用备用图片
-                    fallback_pixmap = self.create_fallback_tree()
-                    self.character_images.append(fallback_pixmap)
-                    self.character_files.append("fallback.png")
-            
-            # 设置当前显示的图片
-            self.tree_pixmap = self.character_images[self.current_image_index]
-            self.original_pixmap = self.tree_pixmap.copy()  # 保存原始图片副本
+                self.original_pixmap = self.tree_pixmap.copy()  # 保存原始图片副本
+            else:
+                self.tree_pixmap = self.create_fallback_tree()
+                self.original_pixmap = self.tree_pixmap.copy()  # 保存原始图片副本
             
             # 加载星星图片
             # "Star1.png"太暗淡了 "Star3.png",还行 直接放最亮的4个  "Star2.png",
@@ -663,45 +623,6 @@ class ChristmasTreeWidget(TransparentWidget):
         
         menu.addSeparator()
         
-        # 角色选择
-        if len(self.character_images) > 1:
-            character_menu = menu.addMenu("角色选择")
-            
-            # 分组显示，每10个一组
-            group_size = 10
-            total_groups = (len(self.character_files) + group_size - 1) // group_size
-            
-            if total_groups == 1:
-                # 只有一组，直接显示所有选项
-                for i, filename in enumerate(self.character_files):
-                    display_name = os.path.splitext(filename)[0]
-                    action = QAction(display_name, self)
-                    action.setCheckable(True)
-                    if i == self.current_image_index:
-                        action.setChecked(True)
-                    action.triggered.connect(lambda checked, idx=i: self.switch_character(idx))
-                    character_menu.addAction(action)
-            else:
-                # 分组显示
-                for group in range(total_groups):
-                    start_idx = group * group_size
-                    end_idx = min((group + 1) * group_size, len(self.character_files))
-                    
-                    # 为每个分组创建子菜单
-                    group_menu = character_menu.addMenu(f"角色 {start_idx:02d}-{end_idx-1:02d}")
-                    
-                    for i in range(start_idx, end_idx):
-                        filename = self.character_files[i]
-                        display_name = os.path.splitext(filename)[0]
-                        action = QAction(display_name, group_menu)
-                        action.setCheckable(True)
-                        if i == self.current_image_index:
-                            action.setChecked(True)
-                        action.triggered.connect(lambda checked, idx=i: self.switch_character(idx))
-                        group_menu.addAction(action)
-        
-        menu.addSeparator()
-        
         # 透明度设置
         transparency_menu = menu.addMenu("透明度")
         for alpha, text in [(255, "0%"), (230, "10%"), (204, "20%"), 
@@ -736,9 +657,9 @@ class ChristmasTreeWidget(TransparentWidget):
     def show_about(self):
         """显示关于对话框"""
         QMessageBox.about(self, "关于", 
-                         "星星人桌面插件\n\n"
+                         "Labubu桌面插件\n\n"
                          "作者：codeliu\n"
-                         "版本：1.3\n"
+                         "版本：1.0\n"
                          "更多：https://github.com/liucf1224-del?tab=repositories\n")
                          
     def toggle_stars(self):
@@ -764,15 +685,6 @@ class ChristmasTreeWidget(TransparentWidget):
         self.global_alpha = alpha
         self.setWindowOpacity(alpha / 255.0)
         self.save_config()
-    
-    def switch_character(self, index):
-        """切换角色图片"""
-        if 0 <= index < len(self.character_images):
-            self.current_image_index = index
-            self.tree_pixmap = self.character_images[self.current_image_index]
-            self.original_pixmap = self.tree_pixmap.copy()
-            self.save_config()
-            self.update()  # 触发重绘
         
     def toggle_topmost(self):
         """切换置顶显示"""
